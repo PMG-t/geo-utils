@@ -11,9 +11,14 @@ from . import fsys
 _USE_EXCEPTIONS = True
 
 
-def is_s3(filename):
-    """
-    iss3
+def is_s3(filename: str | None) -> bool:
+    """Check if a given filename refers to an S3 path.
+
+    Args:
+        filename (str | None): The path or URI to check.
+
+    Returns:
+        bool: True if the path is an S3 URI, False otherwise.
     """
     return (
         filename
@@ -21,9 +26,14 @@ def is_s3(filename):
         and (filename.startswith("s3:/") or filename.startswith("/vsis3/"))
     )
     
-def is_url(filename):
-    """
-    isuri - check if the filename is a URI
+def is_url(filename: str | None) -> bool:
+    """Check if the input string is a valid HTTP or HTTPS URL.
+
+    Args:
+        filename (str | None): The URL string to check.
+
+    Returns:
+        bool: True if it is a URL, False otherwise.
     """
     return (
         filename 
@@ -32,9 +42,14 @@ def is_url(filename):
     )
 
 
-def get_bucket_name_key(uri):
-    """
-    get_bucket_name_key - get bucket name and key name from uri
+def get_bucket_name_key(uri: str | None) -> tuple[str | None, str | None]:
+    """Extract the S3 bucket name and key from a given URI.
+
+    Args:
+        uri (str | None): The S3 URI to parse.
+
+    Returns:
+        tuple[str | None, str | None]: A tuple containing the bucket name and the key.
     """
     bucket_name, key_name = None, None
     if not uri:
@@ -54,11 +69,16 @@ def get_bucket_name_key(uri):
     return bucket_name, key_name
 
 
-def etag(filename, client=None, chunk_size=8 * 1024 * 1024):
-    """
-    calculates a multipart upload etag for amazon s3
-    Arguments:
-    filename   -- The file to calculate the etag for
+def etag(filename: str, client=None, chunk_size: int = 8 * 1024 * 1024) -> str:
+    """Compute the MD5 ETag of a file, handling both local files and S3 URIs.
+
+    Args:
+        filename (str): The local file path or S3 URI.
+        client: Optional boto3 S3 client instance.
+        chunk_size (int): Size in bytes to chunk the file for multipart hashing.
+
+    Returns:
+        str: The computed ETag or empty string if computation fails.
     """
     if filename and os.path.isfile(filename):
         md5 = []
@@ -95,15 +115,25 @@ def etag(filename, client=None, chunk_size=8 * 1024 * 1024):
 
 
 def get_client(client=None):
-    """
-    get_client
+    """Return a boto3 S3 client. If a client is passed, return it directly.
+
+    Args:
+        client: Existing boto3 client or None.
+
+    Returns:
+        boto3.client: An S3 client instance.
     """
     return client if client else boto3.client("s3", region_name="us-east-1")
 
 
-def tempname4S3(uri):
-    """
-    tempname4S3
+def tempname4S3(uri: str | None) -> str:
+    """Generate a temporary local file path that maps to a given S3 URI.
+
+    Args:
+        uri (str | None): The S3 URI.
+
+    Returns:
+        str: A temporary local path corresponding to the S3 URI.
     """
     dest_folder = fsys.tempdir("s3")
     uri = uri if uri else ""
@@ -121,9 +151,16 @@ def tempname4S3(uri):
     return tmp
 
 
-def equals(file1, file2, client=None):
-    """
-    s3_equals - check if s3 object is equals to local file
+def equals(file1: str, file2: str, client=None) -> bool:
+    """Compare the ETag of two files (S3 or local) to determine if they are equal.
+
+    Args:
+        file1 (str): First file path or S3 URI.
+        file2 (str): Second file path or S3 URI.
+        client: Optional boto3 S3 client instance.
+
+    Returns:
+        bool: True if the files are equal, False otherwise.
     """
     etag1 = etag(file1, client)
     etag2 = etag(file2, client)
@@ -132,9 +169,17 @@ def equals(file1, file2, client=None):
     return False
 
 
-def download(uri, fileout=None, remove_src=False, client=None):
-    """
-    Download a file from an S3 bucket
+def download(uri: str, fileout: str | None = None, remove_src: bool = False, client=None) -> str | None:
+    """Download a file or folder from S3 to a local destination.
+
+    Args:
+        uri (str): S3 URI of the file/folder.
+        fileout (str | None): Optional local output path.
+        remove_src (bool): If True, delete the source after downloading.
+        client: Optional boto3 S3 client instance.
+
+    Returns:
+        str | None: Path to the downloaded file, or None on failure.
     """
     bucket_name, key = get_bucket_name_key(uri)
     if bucket_name:
@@ -175,10 +220,17 @@ def download(uri, fileout=None, remove_src=False, client=None):
     return fileout if os.path.isfile(fileout) else None
 
 
-def upload(filename, uri, remove_src=False, client=None):
-    """
-    Upload a file to an S3 bucket
-    Examples: s3_upload(filename, "s3://saferplaces.co/a/rimini/lidar_rimini_building_2.tif")
+def upload(filename: str, uri: str, remove_src: bool = False, client=None) -> str | None:
+    """Upload a local file to an S3 URI. Optionally delete the source file.
+
+    Args:
+        filename (str): Local file path to upload.
+        uri (str): Target S3 URI.
+        remove_src (bool): If True, delete the local file after upload.
+        client: Optional boto3 S3 client instance.
+
+    Returns:
+        str | None: Path to the uploaded file, or None on failure.
     """
 
     # Upload the file
@@ -208,13 +260,17 @@ def upload(filename, uri, remove_src=False, client=None):
     return None
 
 
-def list_files(s3_uri, filename_prefix="", client=None, retrieve_properties=[]):
-    """
-    Elenca tutti i file in un bucket S3 dato il suo URI, filtrando per un prefisso specifico.
+def list_files(s3_uri: str, filename_prefix: str = "", client=None, retrieve_properties: list[str] = []) -> list[str] | list[dict]:
+    """List files in an S3 bucket with an optional prefix and metadata.
 
-    :param s3_uri: URI S3 del bucket (es. "s3://mio-bucket")
-    :param filename_prefix: Prefisso dei file da cercare (es. "dataset-name__variable-name")
-    :return: Lista completa di filename presenti nel bucket con il prefisso specificato.
+    Args:
+        s3_uri (str): S3 URI of the bucket.
+        filename_prefix (str): Prefix to filter files.
+        client: Optional boto3 S3 client instance.
+        retrieve_properties (list[str]): Metadata properties to include.
+
+    Returns:
+        list[str] | list[dict]: List of file keys or dictionaries with metadata.
     """
     parsed_uri = urlparse(s3_uri)
     bucket_name = parsed_uri.netloc
@@ -257,12 +313,16 @@ def list_files(s3_uri, filename_prefix="", client=None, retrieve_properties=[]):
     return file_list
 
 
-def generate_presigned_url(uri, expiration=3600, client=None):
-    """
-    Genera un URL prefirmato per un oggetto S3 privato.
+def generate_presigned_url(uri: str, expiration: int = 3600, client=None) -> str | None:
+    """Generate a pre-signed URL for downloading an S3 object.
 
-    :param uri: URI dell'oggetto S3 da cui generare il pre-signed URL
-    :return: URL prefirmato
+    Args:
+        uri (str): S3 URI of the object.
+        expiration (int): Expiration time in seconds.
+        client: Optional boto3 S3 client instance.
+
+    Returns:
+        str | None: A pre-signed URL or None if generation fails.
     """
     bucket_name, key = get_bucket_name_key(uri)
     client = get_client(client)
@@ -279,13 +339,16 @@ def generate_presigned_url(uri, expiration=3600, client=None):
         return None
 
 
-def copy(source_uri, destination_uri, client=None):
-    """
-    Copia un oggetto S3 da una posizione a un'altra.
+def copy(source_uri: str, destination_uri: str, client=None) -> str | None:
+    """Copy an object from one S3 URI to another.
 
-    :param source_uri: URI dell'oggetto S3 sorgente
-    :param destination_uri: URI dell'oggetto S3 di destinazione
-    :return: True se la copia ha avuto successo, False altrimenti
+    Args:
+        source_uri (str): Source S3 URI.
+        destination_uri (str): Destination S3 URI.
+        client: Optional boto3 S3 client instance.
+
+    Returns:
+        str | None: Destination URI if successful, None otherwise.
     """
     source_bucket_name, source_key = get_bucket_name_key(source_uri)
     destination_bucket_name, destination_key = get_bucket_name_key(destination_uri)
@@ -302,12 +365,15 @@ def copy(source_uri, destination_uri, client=None):
         return None
 
 
-def delete(uri, client=None):
-    """
-    Elimina un oggetto S3.
+def delete(uri: str, client=None) -> bool:
+    """Delete an object from an S3 bucket.
 
-    :param uri: URI dell'oggetto S3 da eliminare
-    :return: True se l'eliminazione ha avuto successo, False altrimenti
+    Args:
+        uri (str): S3 URI of the object to delete.
+        client: Optional boto3 S3 client instance.
+
+    Returns:
+        bool: True if the deletion was successful, False otherwise.
     """
     bucket_name, key = get_bucket_name_key(uri)
 
@@ -322,13 +388,16 @@ def delete(uri, client=None):
         return False
 
 
-def move(source_uri, destination_uri, client=None):
-    """
-    Sposta un oggetto S3 da una posizione a un'altra.
+def move(source_uri: str, destination_uri: str, client=None) -> str | None:
+    """Move an object from one S3 URI to another by copying and deleting.
 
-    :param source_uri: URI dell'oggetto S3 sorgente
-    :param destination_uri: URI dell'oggetto S3 di destinazione
-    :return: True se lo spostamento ha avuto successo, False altrimenti
+    Args:
+        source_uri (str): Source S3 URI.
+        destination_uri (str): Destination S3 URI.
+        client: Optional boto3 S3 client instance.
+
+    Returns:
+        str | None: Destination URI if successful, None otherwise.
     """
     if copy(source_uri, destination_uri, client):
         delete(source_uri, client)
