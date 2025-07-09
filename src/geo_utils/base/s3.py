@@ -8,7 +8,7 @@ from .log import Logger
 from . import fsys
 
 
-_USE_EXCEPTIONS = True
+_USE_EXCEPTIONS: bool = True
 
 
 def is_s3(filename: str | None) -> bool:
