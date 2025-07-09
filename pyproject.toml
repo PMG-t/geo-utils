@@ -1,0 +1,64 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "geo-utils"
+version = "1.0.4"
+description = "Utils and tools for geospatial data"
+readme = ""
+authors = [
+  { name="Tommaso Redaelli", email="tommasoredaelli276@gmail.com" }
+]
+license = { text = "MIT" }
+keywords = []
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent"
+]
+dependencies = [
+  "click",
+  "requests",
+  "filelock",
+  
+  "pandas",
+
+  "geopandas",
+  "xarray",
+  "netcdf4",
+  "rioxarray",
+  
+  "boto3",
+
+  "matplotlib",
+  "plotly",
+  "cartopy",
+  "contextily"
+]
+
+[project.optional-dependencies]
+py311 = [
+    "gdal @ https://download.lfd.uci.edu/pythonlibs/archived/GDAL-3.4.3-cp311-cp311-win_amd64.whl",
+    "numpy==1.24.4",
+    "numba==0.57.1"
+]
+py312 = [
+    "gdal @ https://github.com/cgohlke/geospatial-wheels/releases/download/v2024.9.22/GDAL-3.9.2-cp312-cp312-win_amd64.whl",
+    "numpy==1.26.4",
+    "numba==0.61.0"
+]
+py313 = [
+    "gdal @ https://github.com/cgohlke/geospatial-wheels/releases/download/v2025.3.30/gdal-3.10.2-cp313-cp313-win_amd64.whl",
+    "numpy==2.2.6",
+    "numba==0.61.2"
+]
+
+[project.urls]
+Homepage = "https://github.com/PMG-t/geo-utils"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
