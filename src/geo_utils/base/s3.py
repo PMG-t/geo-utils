@@ -26,6 +26,7 @@ def is_s3(filename: str | None) -> bool:
         and (filename.startswith("s3:/") or filename.startswith("/vsis3/"))
     )
     
+    
 def is_url(filename: str | None) -> bool:
     """Check if the input string is a valid HTTP or HTTPS URL.
 
