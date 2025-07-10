@@ -25,6 +25,7 @@ dependencies = [
   "pandas",
   "scipy",
 
+  "geopy",
   "geopandas",
   "xarray",
   "netcdf4",

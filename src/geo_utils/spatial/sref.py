@@ -3,6 +3,7 @@ from enum import Enum
 from osgeo import osr
 
 from geo_utils.base import _utils
+from geo_utils.spatial import coords
 
 
 
@@ -56,7 +57,7 @@ def epsg_code(crs: str | osr.SpatialReference) -> int | None:
     Raises:
         ValueError: If the CRS string is not recognized and module _USE_EXCEPTIONS is True.
     """
-    srs = from_crs_str(crs) if isinstance(crs, str) else crs
+    srs = load_crs(crs)
     code = srs.GetAuthorityCode(None)
     if code is None:
         if _USE_EXCEPTIONS:
@@ -190,6 +191,29 @@ def from_crs_str(crs: str) -> osr.SpatialReference:
     return srs
 
 
+def load_crs(crs: str | osr.SpatialReference) -> osr.SpatialReference:
+    """
+    Loads a CRS from a string or osr.SpatialReference object.
+
+    Args:
+        crs (str | osr.SpatialReference): The CRS string or SpatialReference object to load.
+
+    Returns:
+        osr.SpatialReference: The loaded SpatialReference object.
+    
+    Raises:
+        ValueError: If the CRS string is not recognized and module _USE_EXCEPTIONS is True.
+    """
+    if isinstance(crs, str):
+        return from_crs_str(crs)
+    elif isinstance(crs, osr.SpatialReference):
+        return crs
+    else:
+        if _USE_EXCEPTIONS:
+            raise ValueError(f"Invalid CRS type: {type(crs)}")
+        return None
+
+
 def to_crs_type(crs: str | osr.SpatialReference, crs_type: str) -> str:
     """
     Converts a CRS string to a specified type (EPSG, WKT, PROJ, OGC_URN, OGC_URL).
@@ -204,7 +228,7 @@ def to_crs_type(crs: str | osr.SpatialReference, crs_type: str) -> str:
     Raises:
         ValueError: If the conversion is not possible or the target type is invalid.
     """
-    srs = from_crs_str(crs) if isinstance(crs, str) else crs
+    srs = load_crs(crs)
     
     if crs_type.upper() == CRSType.EPSG:
         def export_to_epsg(srs: osr.SpatialReference) -> str | None:
@@ -280,7 +304,7 @@ def utm_crs(lat: float, lon: float, crs_type: str | None) -> str | osr.SpatialRe
     srs = from_crs_str(f"EPSG:{code}")
     if srs is None:
         if _USE_EXCEPTIONS:
-            raise ValueError(f"Invalid UTM CRS for zone {zone} and hemisphere {'N' if lat >= 0 else 'S'}")
+            raise ValueError(f"Invalid UTM CRS for zone {code} and hemisphere {'N' if lat >= 0 else 'S'}")
         return None
     if crs_type is not None:
         srs = to_crs_type(srs, crs_type)
@@ -292,3 +316,78 @@ def utm_crs(lat: float, lon: float, crs_type: str | None) -> str | osr.SpatialRe
     return srs
     
 
+def is_valid_crs(crs: str | osr.SpatialReference) -> bool:
+    """
+    Checks if a given CRS string or osr.SpatialReference object is valid.
+    
+    Args:
+        crs (str | osr.SpatialReference): The CRS string or SpatialReference object to check.
+        
+    Returns:
+        bool: True if the CRS is valid, False otherwise.
+    """
+    try:
+        srs = load_crs(crs)
+        return srs.Validate() == 0
+    except Exception as e:
+        if _USE_EXCEPTIONS:
+            raise ValueError(f"Invalid CRS: {crs}") from e
+        return False
+    
+
+def is_geographic(crs: str | osr.SpatialReference) -> bool:
+    """
+    Checks if a given CRS string or osr.SpatialReference object is geographic (latitude/longitude).
+    
+    Args:
+        crs (str | osr.SpatialReference): The CRS string or SpatialReference object to check.
+        
+    Returns:
+        bool: True if the CRS is geographic, False otherwise.
+    """
+    try:
+        srs = load_crs(crs)
+        return srs.IsGeographic() == 1
+    except Exception as e:
+        if _USE_EXCEPTIONS:
+            raise ValueError(f"Invalid CRS: {crs}") from e
+        return False
+    
+    
+def is_projected(crs: str | osr.SpatialReference) -> bool:
+    """
+    Checks if a given CRS string or osr.SpatialReference object is projected (e.g., UTM).
+    
+    Args:
+        crs (str | osr.SpatialReference): The CRS string or SpatialReference object to check.
+        
+    Returns:
+        bool: True if the CRS is projected, False otherwise.
+    """
+    try:
+        srs = load_crs(crs)
+        return srs.IsProjected() == 1
+    except Exception as e:
+        if _USE_EXCEPTIONS:
+            raise ValueError(f"Invalid CRS: {crs}") from e
+        return False
+    
+    
+def crs_distance_function(crs: str) -> callable:
+    """
+    Returns a function to calculate distances in the specified CRS.
+    
+    Args:
+        crs (str): The CRS string, e.g., "EPSG:4326".
+        
+    Returns:
+        callable: A function that takes two points and returns the distance in meters.
+    """
+    srs = load_crs(crs)
+    
+    if srs.IsGeographic():
+        return coords.geographic_distance
+    elif srs.IsProjected():
+        return coords.projected_distance
+    else:
+        raise ValueError(f"Unsupported CRS type for distance calculation: {crs}")

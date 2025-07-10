@@ -1,2 +1,2 @@
 from . import base
-from . import coords
+from . import spatial
