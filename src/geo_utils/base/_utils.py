@@ -1,9 +1,5 @@
 import os
 
-import numpy as np
-
-from shapely.geometry import Point
-
 
 _USE_EXCEPTIONS: bool = True
 

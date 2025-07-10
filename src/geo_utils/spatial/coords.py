@@ -72,7 +72,7 @@ def point2type(coord: list | tuple | np.ndarray | Point, ptype: type) -> list | 
     elif ptype is list:
         return point2array(coord).tolist()
     elif ptype is tuple:
-        return tuple(point2array(coord))
+        return tuple(point2array(coord).tolist())
     
     raise ValueError(f"Unsupported type for conversion: {ptype}.")
 
@@ -189,6 +189,43 @@ def middle_point(coord1: list | tuple | np.ndarray | Point, coord2: list | tuple
     y_mid = (y1 + y2) / 2
     
     return point2type((x_mid, y_mid), return_type)
+
+
+def points_between(coord1: list | tuple | np.ndarray | Point, coord2: list | tuple | np.ndarray | Point, n_points: int = None, distance: float = None, endpoint: bool = True) -> list[tuple]:
+    """
+    Generates a list of n_points evenly spaced coordinates between coord1 and coord2. Always includes coord1 and coord2.
+    
+    Args:
+        coord1 (list, tuple, np.ndarray, Point): The first coordinate.
+        coord2 (list, tuple, np.ndarray, Point): The second coordinate.
+        n_points (int): The number of points to generate between coord1 and coord2.
+        distance (float): The distance between each point. If provided, overrides n_points.
+        endpoint (bool): Whether to include the coord2 as the last point in the list.
+        
+    Returns:
+        list[tuple]: A list of tuples representing the coordinates of the points.
+    """
+    
+    return_type = type(coord1)
+    coord1 = point2array(coord1)
+    coord2 = point2array(coord2)
+    
+    x1, y1 = coord1
+    x2, y2 = coord2
+    
+    if n_points is None and distance is None:
+        raise ValueError("Either n_points or distance must be specified.")
+    if n_points is not None and distance is not None:
+        raise ValueError("Specify either n_points or distance, not both.")
+    if n_points is not None:
+        xs = np.linspace(x1, x2, num=n_points, endpoint=endpoint)
+        ys = np.linspace(y1, y2, num=n_points, endpoint=endpoint)
+        return [point2type((x, y), type(return_type)) for x, y in zip(xs, ys)]
+    elif distance is not None:
+        offset = distance if endpoint else 0
+        xs = np.arange(x1, x2+offset, step=distance if x1<=x2 else -distance)
+        ys = np.arange(y1, y2+offset, step=distance if y1<=y2 else -distance)
+        return [point2type((x, y), type(return_type)) for x, y in zip(xs, ys)]
 
 
 def next_point(coord1: list | tuple | np.ndarray | Point, coord2: list | tuple | np.ndarray | Point, distance: float) -> list | tuple | np.ndarray | Point:
