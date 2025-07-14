@@ -1,4 +1,5 @@
 import os
+import math
 from osgeo import osr
 
 from .import sref
@@ -29,7 +30,7 @@ def m2dg(m: float, lat: float | None = None) -> float:
         float: Distance in degrees.
     """
     if lat is not None:
-        return m / (111320 * abs(os.path.cos(lat * (3.141592653589793 / 180))))
+        return m / (111320 * abs(math.cos(lat * (3.141592653589793 / 180))))
     else:
         return m / 111320  # Default conversion without latitude consideration
     
@@ -46,7 +47,7 @@ def dg2m(dg: float, lat: float | None = None) -> float:
         float: Distance in meters.
     """
     if lat is not None:
-        return dg * (111320 * abs(os.path.cos(lat * (3.141592653589793 / 180))))
+        return dg * (111320 * abs(math.cos(lat * (3.141592653589793 / 180))))
     else:
         return dg * 111320  # Default conversion without latitude consideration
 
